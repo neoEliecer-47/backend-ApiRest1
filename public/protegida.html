@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>Ruta protegida</h1>
+    <div >
+        <h2 id="useremail">Email:</h2>
+    </div>
+
+    <button id="logout">cerrar sesión</button>
+
+    <script>
+        const logout = document.querySelector('#logout')
+
+        logout.addEventListener('click', () => {
+            const res = fetch("/api/v1/auth/logout", {
+                method: "GET"
+            })
+            console.log(res)
+        })        
+        
+        document.addEventListener("DOMContentLoaded", async e => {
+            
+            const resToken = await fetch("/api/v1/auth/refresh", {
+                method: 'GET',
+                credentials: "include"//por cada solicitud que se haga a nuestro servidor, incluye la cookie con nuestro token
+            })
+
+            const {token} = await resToken.json()//sacamos la respuesta en json de la api(token), en este caso en la ruta de refresh
+            
+            const res = await fetch("/api/v1/auth/protected", {
+                method: "GET",
+                headers: {
+                    "Content-Type": "aplication/json",
+                    Authorization: "Bearer " + token
+                },
+                //credentials: "include"
+            })
+            console.log(res.ok, res.status)
+            const data = await res.json()
+            
+            if(res.ok) document.getElementById("useremail").textContent = data.email
+            
+            console.log(data)
+
+        })
+
+    </script>
+</body>
+</html>

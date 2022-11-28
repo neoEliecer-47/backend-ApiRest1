@@ -1,5 +1,6 @@
 import { User } from "../models/UserSchema.js"
-import jwt from 'jsonwebtoken'
+import { generateRefreshToken, generateToken } from "../utils/tokenManager.js"
+import jwt from "jsonwebtoken"
 
 
 export const register = async(req, res) => {
@@ -42,14 +43,66 @@ export const login = async(req, res) => {
         const resPassword = await user.comparePassword(password)//esto es una promesa, retorna true o false, por lo tanto añadimos el await
         if(!resPassword) return res.status(400).json({error: "contraseña incorrecta"})
 
-                             //payload       , jsonwebtoken secreto
-        const token = jwt.sign({uid: user.id}, process.env.JWT_SECRET)
+               //devolvimos un objeto en el generateToken, por tanto hacemos destructuracion               
+        const {token, expiresIn} = generateToken(user.id)
         //la bd crea al usuario el id por defecto (_id) y tambien puede ser accedida como siemple 'id'
+        generateRefreshToken(user.id, res)//lo guarda en la cookie del navegador
         
-        res.json({ token})
+
+        //console.log(token, expiresIn)
+        return res.json({ token, expiresIn })
+        
     } catch (error) {
         console.log(error)
         res.status(500).json({error: "error de servidor"})
         
     }
+}
+
+
+export const infoUser = async(req, res) => {
+    try {
+        
+    const user = await User.findById(req.uid).lean() //devuelve un objeto simple de JS sin poderes de mongoose, y asi el sistema es mas eficiente
+
+        return res.json({email: user.email, id: user._id})//id tal cual como esta en la bd a cuausa del metodo Lean()
+    } catch (error) {
+        return res.statud(500).json({error: "error inesperado del servidor"})
+    }
+    
+}
+
+
+export const refeshToken = (req, res) => {
+
+    try {
+        const refreshTokenCookie = req.cookies.refreshToken
+        
+        if(!refreshTokenCookie) throw new Error('no existe el Rtoken')
+
+        const {uid} = jwt.verify(refreshTokenCookie, process.env.JWT_REFRESH)//verificamos el refresh token con la clave secreta (JWT_REFRESH)
+
+        const {token, expiresIn} = generateToken(uid)
+
+        return res.json({token, expiresIn})//cada vez que se visite esta ruta, le estaremos devolviendo un token valido
+
+    } catch (error) {
+        const tokenVerificationErrors = {
+            "invalid signature": "la firma de JWT no es válida",
+            "jwt expired": "token expirado",
+            "invalid token": "token no válido",
+            "no Bearer": "utiliza formato Bearer",
+            "jwt malformed": "JWT con formato inválido"
+        }
+        
+        
+        return res.status(401).json({error: tokenVerificationErrors[error.message]})//notacion cor corchetes para renombrar los errores de jwt de forma dinámica
+    }
+
+}
+
+
+export const logOut = (req, res) => {
+    res.clearCookie("refreshToken")
+    res.json({ok: true})
 }

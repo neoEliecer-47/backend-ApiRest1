@@ -1,7 +1,8 @@
 import {Router} from 'express'
-import { login, register } from '../controllers/auth.controller.js';
+import { infoUser, login, register, refeshToken, logOut } from '../controllers/auth.controller.js';
 import {body} from 'express-validator'
 import { validarResultEx } from '../middlewares/validationResultEx.js';
+import { requireUserToken } from '../middlewares/requireToken.js';
 
 const router = Router()
 
@@ -24,6 +25,10 @@ body("password", "minimo 6 caracteres")
     .trim()
     .isLength({min: 6})
 ],validarResultEx,login)
+
+router.get("/protected", requireUserToken, infoUser)
+router.get("/refresh", refeshToken)
+router.get("/logout", logOut)
 
 export default router;
 
