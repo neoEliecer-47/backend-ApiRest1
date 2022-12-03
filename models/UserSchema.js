@@ -42,4 +42,4 @@ userSchema.methods.comparePassword = async function(clientPassword){
     //clientPassword es la contraseña igresada por un usuario que va a compararse con la contraseña del modelo del usuario, es decir la contraseña alojada y hasheada en BD
 }
 
-export const User = model("user", userSchema) //el 'user' es el parametro que estaremos enviado a mongoDB, aunque la bd por defecto nos las pondra en plural
+export const User = model("User", userSchema) //el 'user' es el parametro que estaremos enviado a mongoDB, aunque la bd por defecto nos las pondra en plural

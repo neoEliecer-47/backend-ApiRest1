@@ -1,6 +1,6 @@
 import { User } from "../models/UserSchema.js"
 import { generateRefreshToken, generateToken } from "../utils/tokenManager.js"
-import jwt from "jsonwebtoken"
+
 
 
 export const register = async(req, res) => {
@@ -14,13 +14,17 @@ export const register = async(req, res) => {
         //alternativa buscando email
         user = new User({ email, password })    //debe coincidir con los nombres del modelo, metemos los datos al modelo y los guardamos en la bd luego de ser todo validado
     await user.save() //el await espera por el 'ok' de la bd, si no es asi, no continua con el codigo y se queda esperando
-    return res.status(201).json({ok: "usuario registrado exitosamente"})
     //if(user.email === email) throw new Error('usuario existente')
     
     //JWT
-
-   
-    } catch (error) {
+    
+    const {token, expiresIn} = generateToken(user.id)
+    //la bd crea al usuario el id por defecto (_id) y tambien puede ser accedida como siemple 'id'
+    generateRefreshToken(user.id, res)//lo guarda en la cookie del navegador
+    
+    return res.status(201).json({token, expiresIn})
+    
+} catch (error) {
         return res.status(404).json({error: error.message})
         //if(error.code === 11000) return res.status(400).json({error: "usuario ya registrado"})
         //el error 11000 es de duplicaion de llaves en la bd, cuamdo una coleccion del modelo tiene una propiedad de tipo 'unique'
@@ -76,27 +80,15 @@ export const infoUser = async(req, res) => {
 export const refeshToken = (req, res) => {
 
     try {
-        const refreshTokenCookie = req.cookies.refreshToken
         
-        if(!refreshTokenCookie) throw new Error('no existe el Rtoken')
-
-        const {uid} = jwt.verify(refreshTokenCookie, process.env.JWT_REFRESH)//verificamos el refresh token con la clave secreta (JWT_REFRESH)
-
-        const {token, expiresIn} = generateToken(uid)
+        const {token, expiresIn} = generateToken(req.uid)
 
         return res.json({token, expiresIn})//cada vez que se visite esta ruta, le estaremos devolviendo un token valido
 
     } catch (error) {
-        const tokenVerificationErrors = {
-            "invalid signature": "la firma de JWT no es válida",
-            "jwt expired": "token expirado",
-            "invalid token": "token no válido",
-            "no Bearer": "utiliza formato Bearer",
-            "jwt malformed": "JWT con formato inválido"
-        }
         
         
-        return res.status(401).json({error: tokenVerificationErrors[error.message]})//notacion cor corchetes para renombrar los errores de jwt de forma dinámica
+        return res.status(401).json({error: "error de servidor"})//notacion cor corchetes para renombrar los errores de jwt de forma dinámica
     }
 
 }
