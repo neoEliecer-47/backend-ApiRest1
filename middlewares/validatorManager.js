@@ -14,7 +14,7 @@ export const bodyLinkValidator = [
     body("originLink", "ingrese una URL correcta").trim().notEmpty()
     .custom(async (value) => {//value representa originLink, el valor con el cliente hace la solicitud
         try {
-            if(!value.startsWith("https://")) "https://" + value
+            if(!value.startsWith("http")) value = "https://" + value
            
             await axios.get(value)
             return value
