@@ -13,7 +13,8 @@ const whiteList = [process.env.ORIGIN1, process.env.ORIGIN2]
 
 app.use(cors({//comunicaion entre servidores, mas seguridad anuestra app
     origin: function(origin, callback){
-        if(whiteList.includes(origin)) return callback(null, origin)
+        console.log("--> "+origin)
+        if(!origin || whiteList.includes(origin)) return callback(null, origin)
         return callback("error de CORS " + origin + " no autorizado")
     }
 }))
